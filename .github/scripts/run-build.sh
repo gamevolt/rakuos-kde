@@ -28,8 +28,10 @@ PASS_VARS=(
   BRANCH RUN_ID REVISION SOURCE_URL FEDORA_VERSION_OVERRIDE
 )
 env_args=()
+PRESERVE_ENV_LIST=""
 for v in "${PASS_VARS[@]}"; do
-  env_args+=(-e "${v}")
+  env_args+=( -e "${v}" )
+  PRESERVE_ENV_LIST="${PRESERVE_ENV_LIST:+${PRESERVE_ENV_LIST},}${v}"
 done
 
 # Pull the build container first, retrying any failure: Quay sometimes
@@ -48,7 +50,7 @@ until sudo podman pull --quiet "${BUILD_IMAGE}" >/dev/null; do
   delay=$((delay * 2))
 done
 
-sudo --preserve-env="$(IFS=,; echo "${PASS_VARS[*]}")" podman run --rm --privileged \
+sudo --preserve-env="${PRESERVE_ENV_LIST}" podman run --rm --privileged \
   --security-opt label=disable \
   -v "${WORK}":/src -w /src \
   -e STORAGE_DRIVER=overlay -e BUILDAH_FORMAT=oci \
